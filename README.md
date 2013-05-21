@@ -7,6 +7,6 @@ To view the documentation on your local machine, you'll need to have ruby instal
 gem install apiaryio
 
 Then to view the documentation, from the root directory of your working area:
-apiaryio preview --server
+apiary preview --server
 
 Then connect your browser to http://localhost:8080
