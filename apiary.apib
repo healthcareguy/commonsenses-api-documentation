@@ -77,29 +77,279 @@ Example:
 The keywords match the error keywords to be found in the individual operation documentation.
 
 ---
+--
+Authorization
+All requests for resources are controlled by an access token. The easiest access token for an application to request is one based on its own credentials. These credentials are the application id and application secret generated when you registered your application on the [dev.commonsenses.com](http://dev.commonsenses.com) website.
+
+This application authentication used to get this application access token is based on the JSON Web Token ( JWT ). The JWT is comprised of 3 sections: a header, a claim, and a signature. Each section is a base64 url encoding of some string. The combination of these 3 sections is called the assertion.
+
+### Header
+The header MUST be based on this JSON: {"alg":"HS256","typ":"JWT"}. HS256 stands for HMAC-SHA256. This is the only type of encryption and hashing supported by the CommonSenses server for this token request. This is string is then base64 url encoded ( we'll call this the encoded_header ).
+
+### Claim
+The claim MUST follow this format ( all fields are required ): {"iss":"[application_id]","prn":"[application_id]","aud":"http://api.commonsenses.com/oauth/token","exp":[expiration_time]} .
+Where [application_id] is the application id generated for your application on the [dev.commonsenses.com](http://dev.commonsenses.com) website. 
+And [expiration_time] is the time, in milliseconds from Jan 01, 1970, of when CommonSenses should reject your request as being too old. This is prevent replay attacks. Due to the possibility of timestamp mismatches between machines, this expiration time isn't strictly enforced, there is 2 minute window past the stated expiration time where we still treat it as valid.
+
+This string is also base64 url encoded ( we'll call this the encoded_claim ).
+
+### Signature
+From the encoded_header and encoded_claim, you need to generate a signature.
+1. combine encoded_header and encoded_claim into a single string, using a "." delimiter: encoded_header.encoded_claim
+2. Using an HMAC-SHA256 encryption algorithm and using the application secret as the encryption key, generate a signature based on the combined string from 1.
+3. base64 url encode this signature ( we'll call this the encoded_signature )
+
+### Assertion
+The assertion is the concatentation of the 3 encoded strings using a "." delimiter:
+encoded_header.encoded_claim.encoded_signature
+
+### Code Samples
+Ruby: 
+
+Uses json gem.
+
+	require "base64"
+	require "openssl"
+	require "rubygems"
+	require "json"
+
+	application_id="my-application-id"
+	application_secret="my-secret"
+
+    # expire two minutes from now
+	expire_time=Time.now.to_i*1000+2*60*1000
+
+    # create the header
+	header={"typ"=>"JWT","alg"=>"HS256"}
+	header_str=JSON.dump(header)
+
+    # create the claim
+	claim={"iss"=>application_id,
+		   "prn"=>application_id,
+		   "aud"=>"http://bhershpc.commonsenses.com:8080/oauth/token",
+		   "exp"=>expire_time}
+	claim_str=JSON.dump(claim)
+
+    # create the encoded input
+	encoded_header=Base64.urlsafe_encode64(header_str)
+	encoded_claim=Base64.urlsafe_encode64(claim_str)
+	segments=[]
+	segments << encoded_header
+	segments << encoded_claim
+	secure_input=segments.join(".")
+
+    # create the signature and remove the last base64 encoded character ( usually a "=" symbol )
+	signature=OpenSSL::HMAC.digest(OpenSSL::Digest::Digest.new("sha256"),application_secret,secure_input)
+	encoded_signature=Base64.urlsafe_encode64(signature)[0..-2]
+
+    # concatenate the assertion
+	segments << encoded_signature
+	assertion=segments.join(".")
+
+
+Python:
+
+	import base64
+	import hashlib
+	import hmac
+	import json
+	import time
+	import math
+
+	application_id="my-application-id"
+	application_secret="my-secret"
+
+    # expire two minutes from now
+	expire_time=math.trunc(time.time()*1000)+2*60*1000
+
+    # create the header
+	header={"typ":"JWT","alg":"HS256"}
+
+    # create the claim
+	claim={"iss":application_id,
+		   "prn":application_id,
+		   "aud":"http://api.commonsenses.com/oauth/token",
+		   "exp":expire_time}
+
+    # create the encoded input
+	encoded_header=base64.urlsafe_b64encode(json.dumps(header)).replace("=","")
+	encoded_claim=base64.urlsafe_b64encode(json.dumps(claim)).replace("=","")
+	segments=[]
+	segments.append(encoded_header)
+	segments.append(encoded_claim)
+	signing_input='.'.join(segments)
+
+    # create the signature
+	signature=hmac.new(application_secret,signing_input,hashlib.sha256).digest()
+	encoded_signature=base64.urlsafe_b64encode(signature).replace("=","")
+
+    # concatenate the assertion
+	segments.append(encoded_signature)
+	assertion='.'.join(segments)
+
+PHP:
+
+	function get_CS_application_token_JWT_assertion()
+	{
+	  $applicationId = APP_ID;
+	  $applicationSecret = APP_SECRET;
+
+	  $url = HOSTNAME . '/oauth/token';
+
+	  // expire two minutes from now                                                                         
+	  $expireTime = time() * 1000 + 2*60*1000;
+
+	  // create the header                                                                                   
+	  $header = array('typ' => 'JWT', 'alg' => 'HS256');
+
+	  // create the claim                                                                                    
+	  $claim = array('iss' => $applicationId,
+	                 'prn' => $applicationId,
+	                 'aud' => $url,
+	                 'exp' => $expireTime);
+
+	  // create the signature                                                                                
+	  $segments = array();
+	  $segments[] = urlsafeB64Encode(json_encode($header));
+	  $segments[] = urlsafeB64Encode(json_encode($claim));
+	  $signing_input = implode('.', $segments);
+	  $signature = hash_hmac('sha256', $signing_input, $applicationSecret, true);
+	  $segments[] = urlsafeB64Encode($signature);
+
+	  return implode('.', $segments);
+	}
+
+	function urlsafeB64Encode($input)
+	{
+	  return str_replace('=', '', strtr(base64_encode($input), '+/', '-_'));
+	}
+
+
+Java:
+
+Uses [json.org JSON library](http://json.org/java/)  and  Base64 from [Apache Commons Codec](http://commons.apache.org/proper/commons-codec/):
+
+	import org.json.JSONObject;
+	import javax.crypto.Mac;
+	import javax.crypto.spec.SecretKeySpec;
+	import org.apache.commons.codec.binary.Base64
+
+	final String applicationSecret = "my-secret";
+	final String applicationId = "my-application-id";
+    /* create the header */
+	final JSONObject header = new JSONObject();
+	header.put("typ", "JWT");
+	header.put("alg", "HS256");
+
+    /* create the claim */
+	final JSONObject claim = new JSONObject();
+	claim.put("iss", applicationId);
+	claim.put("aud", "http://api.commonsenses.com/oauth/token");
+	claim.put("prn",applicationId);
+    /* expires in 2 minutes */
+	claim.put("exp",System.currentTimeMillis()+2*60*1000 );
+    
+	/* create the encoded input */
+	final String encodedHeader = Base64.encodeBase64URLSafeString( header.toString().getBytes() );
+	final String encodedClaim = Base64.encodeBase64URLSafeString( claim.toString().getBytes());
+	final String encodedSecureInput = encodedHeader+"."+encodedClaim;
+
+    /* generate the signature */
+	final Mac hmac = Mac.getInstance("HmacSHA256");
+	final SecretKeySpec signingKey = new SecretKeySpec(applicationSecret.getBytes(), "HmacSHA256");
+	hmac.init(signingKey);
+	hmac.update(encodedSecureInput.getBytes());
+	final byte[] signatureBytes = hmac.doFinal();
+	final String encodedSignature = Base64.encodeBase64URLSafeString(signatureBytes);
+
+    /* contatentate the assertion */
+	final String encodedSignedAssertion = encodedSecureInput+"."+encodedSignature;
+        
+
+### Errors
+Errors are returned with a 400 status code and a JSON body of the format
+
+   { "error":"invalid_client",
+     "error_description":"`<some string>`" }
+
+<table border=1>
+<tr><th>Error Condition</th><th>error_description</th><th>Remediation</th></tr>
+<tr><td>iss value is not valid</td><td>invalid_client_id : there is no client with the supplied id</td><td>verify that the iss matches your application id</td></tr>
+<tr><td>iss and prn values do not match</td><td>client_id_mismatch : the iss and prn values do not match</td><td>verify that the iss and prn match your application id</td></tr>
+<tr><td>iss value has been deactivated</td><td>client_deactivated : the supplied iss value has been deactivated</td><td>contact support at support@elbrys.com</td></tr>
+<tr><td>exp value is too old</td><td>assertion_expired : the supplied exp value is too far in the past</td><td>exp value was more than two minutes in the past by the time it was recieved. verify your system time is accurate or increase the expiration time</td></tr>
+<tr><td>server could not validate the signature</td><td>signature_invalid : the server was unable to verify the signature</td><td>verify that the application secret used to sign is correct and/or that bas64url encoded was used</td></tr>
+<tr><td>aud value was incorrect</td><td>audience_not_valid : the aud value was invalid for the target server</td><td>verify that aud is http://api.commonsenses.com/oauth/token</td></tr>
+<tr><td>claim was missing one or more required fields</td><td>claim_invalid : the claim was missing the `<field name>` field</td><td>verify that iss, prn, aud, and exp are present in the claim</td></tr>
+</table>
+
+### Special Privileges
+With this access token, a client application gets some special privileges within CommonSenseses.
+
+* create User records
+* full access to all metric types for all Users associated with your application
+
+--
+Get a new access token.
+
+Parameters:
+
+* __grant_type__: Required. MUST be urn:ietf:params:oauth:grant-type:jwt-bearer
+* __assertion__: Required. The encoded assertion string
+
+Response:
+
+* __access_token__: a hexadecimal string representing the access token
+* __scope__: "all" (currently "all" is the only scope returned)
+* __token_type__: "application_access" (currently "application_access" is the only token_type returned)
+* __expires_in__: the number of seconds in which this token will expire (e.g. 86400 = 1 day) 
+
+GET /oauth/token?grant_type={grant_type}&assertion={assertion}
+> Accept: application/json
+< 200
+< Content-Type: application/json
+{ "access_token":"HEXDECSTRING",
+  "scope":"all",
+  "token_type":"application_access",
+  "expires_in",86400 }
++++++
+< 400
+< Content-Type: application/json
+{ "error":"invalid_client",
+  "error_description":"claim_invalid : the claim was missing the iss field" }
 
 --
 User Resources
 A user is the data element to which collectors and metrics are associated.
---
-Get user id. 
-GET /user
-> Authorization: bearer {access_token}
-> Accept: application/vnd.commonsenses.v1+json
-< 200
-< Content-Type: application/vnd.commonsenses.v1+json
-{"id":"101856208078938619879",
- "name":"sandbox-1001875581218806767393-1364558065817",
- "link":[]}
-+++++
-< 403
-< Content-Type: application/vnd.commonsenses.v1+json
-{"error":"101856208078938619879"}
-+++++
-< 400
-{"error":"missing_client_id",
-"error_description":"commonsenses determined that the user needed to authenticate again, but the request missing some a required client_id in the request."}
 
+### JSON User Definition:
+* __id__: Required for PUT. N/A for POST. The CommonSenses user id of the user.
+* __name__: Optional for POST. A human-readable name. Will be used to personalize CommonSenses web resources and by customer support
+* __timeZone__: Optional for POST. A valid timezone name from [IANA Timezone Database](http://www.iana.org/time-zones). Used with some 3rd party vendors to estabilish correct timestamps on data. If not provided GMT is assumed for the user.
+* __identity.providedId__: Required for POST. A unique identifier from the creating application's system for this user.
+
+--
+
+Create a user. Users created by an application are only visible to application that created them. This POST operation is considered idempotent. If the same identity.providerId value is used, then the application can rediscover the commonsenses id of that user. No updates will be done via this POST operation.
+
+POST /user
+> Authorization: bearer {access_token}
+> Content-Type: application/vnd.commonsenses.v1+json
+{ "identity":[{ "providerId":"aef093-a92893-ef89abc"}],
+  "name":"John Q. Public",
+  "timeZone":"America/New_York"}
+< 201
+< Location: /user/{userId}
+--
+Update a user. Only name and timeZone will be updated.
+
+PUT /user/{userId}
+> Authorization: bearer {access_token}
+> Content-Type: application/vnd.commonsenses.v1+json
+{ "id":"123123",
+  "name":"John Q. Public",
+  "timeZone":"America/Chicago"}
+< 204
 
 --
 Metric Resources
@@ -111,31 +361,80 @@ Data represents a single sample of that measurable event taken either at a
 single point in time or over some time range.
 
 A list of metrics is called a Metric Collection.
+### JSON Metric Definition:
+* __ver__: Required for POST.  The version of the format used in the JSON.  Currently always 1.
+* __profileUnits__:  Required for POST.  The units of the returned metrics.  g = Gravities, {activity} = an activty type, mg/dL = Milligrams per Decaliter, kPa = kilopascals, mm[Hg] = millimeters of mecury, kg/m2 = kilograms per meter^2, Cal = kilocalories, km = kilometers, cm = centimeters, deg = degrees, m = meters, [MET] = metabolic equivalence unit, {beat}/min = beats per minute, km/h = kilometers per hour, {step} = steps, kg = kilograms
+* __profileName__:  Required for POST.  The values in the 'Value' field of the 'Data' field has a specific syntax for the values.  This field, profileName, defines that format. accelerometer = [{x acceleration in g}, {y acceleration in g}, {z acceleration in g}], activityType = {activity}, bloodGlucose = {glucose level}, bloodPressure = [{systolic},{diastolic},{mean arterial pressure}], bmi = {body mass index}, caloriesBurned = {calories burned}, distanceTraveled = {distance traveled}, height = {height}, location = [{latitude}, {longitude}, {elevation}], mets = {metablic equivalent task}, pulseRate = {pulse rate}, speed = {speed}, steps = {steps}, weight = {weight}
+* __metricType__:  Required for POST.  The type of metric.  The enumeration for valid values is the same as __types__ in the GET request.
+* __collector__:  Optional for POST (defaults to application identifier that is doing the POST).  A definition of the collector (sensor or application) that generated the metric.
+*    __href__:  A Universal Resource Identifier (URI) defining the collector.  The numeric value in the URI may be used in Collector methods of this RESTful API.
+*    __rel__:  Indicates that this URI is NOT a Universal Resource Locator (URL) and cannot be followed.
+* __metricId__:  Not used for POST. Required for PUT. Always present in GET (if present then it will add data to the existing metic).  A unique identifier the metric.
+* __profileAccumulator__:  Optional for POST (defaults to native).  A metric's value often represents a sample period.  Since multiple values may be gathered during a sample period and a metric represents it as a single value it is important to understand how the values during the sample period were combined to generate the single value.  native = no accumulation occurred,  sum = the values of the sample period were added together,  avg = the values of the sample period were added together and divided by the number of samples.
+* __link__:  Not used in POST or PUT. Present in GET and represent the url to directly access this metric.
+* __startTime__: Never in POST.  The value of the startTime field of the first Data sample.
+* __endTime__:  Never in POST.  The value of the endTime field of the last Data sample.
+* __operator__:  Optional for POST (defaults to user).  Describes who took the metric readings.
+*    __href__:  A Universal Resource Identifier (URI) defining the user that took the reading.  The numeric value in the URI may be used in User methods of this RESTful API.
+*    __rel__:  Indicates that this URI is NOT a Universal Resource Locator (URL) and cannot be followed.
+*    __professional__:  Optional for POST (defaults to false).  Boolean indicating whether the operator was a trained medical professional or not.
+*    __data__:  Optional for POST (a POST without data creates a __metricId__ that can be used with PUTs) A list of data values of the metric.
+*    __startTime__:  The start time of the sampling of this data value.
+*    __endTime__:  The end time of the sampling of this data value.
+*    __value__:  A list containing the value in the __profileName__ format, in the __profileUnits__ units, using the __profileAccumulator__ to combine the values during the sampling period.  It is a list in case a single value has multiple pieces of information (blood pressure, location, etc).
+*    __metadata__:  Optional for POST. an arbitrary set of name/value pairs that allow an application to provide additional, application specific, information with a Metric. Names can be arbitrary and may contain an optional domain prefix to help distinguish the metaData written by different applications.
+--
+Create new metric.  This is used if your application is acting as a collector/sensor.  Otherwise this is rarely used by an application.
+
+POST /user/{userId}/metric
+> Authorization: bearer {access_token}
+> Content-Type: application/vnd.commonsenses.v1+json
+{
+"data" : [ {
+            "endTime" : "2013-04-01T11:45:24.127-04:00",
+            "startTime" : "2013-04-01T11:45:24.126-04:00",
+            "value" : [ "1305" ]
+           } ],
+"metaData" : [ {
+                 "com_Elbrys_MetadataExample1" : "34"
+               },
+               {
+                "org_Example_MetaDataExample2" : "Example Metadata"
+                } ],
+"metricType" : "steps",
+"profileAccumulator" : "sum",
+"profileName" : "steps",
+"profileUnits" : "{step}",
+"ver" : "1"
+}
+< 201
+< Location: /metric/1043487174283814390993
+
+Update existing metric.  Similar to POST this is used if your application is acting as a collector/sensor.
+
+PUT /metric/{metricId}
+> Authorization: bearer {access_token}
+> Content-Type: application/vnd.commonsenses.v1+json
+{
+    "ver": "1",
+    "metricType": "steps",
+    "profileName": "steps",
+    "data": [
+        {
+            "endTime": "2012-09-20T03:59:59.999Z",
+            "value": ["1500"],
+            "startTime": "2012-09-19T04:00:00.000Z"
+        }
+    ]
+}
+< 200
+< Content-Type: application/vnd.commonsenses.v1+json
+
 
 ### JSON Metric Collection Definition:
 * __totalCount__: Required for POST.  The total number of "metric" elements.
-* __metric__: Required for POST.  A single metric collection.
-*     __ver__: Required for POST.  The version of the format used in the JSON.  Currently always 1.
-*     __profileUnits__:  Optional for POST.  The units of the returned metrics.  g = Gravities, {activity} = an activty type, mg/dL = Milligrams per Decaliter, kPa = kilopascals, mm[Hg] = millimeters of mecury, kg/m2 = kilograms per meter^2, Cal = kilocalories, km = kilometers, cm = centimeters, deg = degrees, m = meters, [MET] = metabolic equivalence unit, {beat}/min = beats per minute, km/h = kilometers per hour, {step} = steps, kg = kilograms
-*     __collector__:  Optional for POST (defaults to application identifier that is doing the POST).  A definition of the collector (sensor or application) that generated the metric.
-*        __href__:  A Universal Resource Identifier (URI) defining the collector.  The numeric value in the URI may be used in Collector methods of this RESTful API.
-*        __rel__:  Indicates that this URI is NOT a Universal Resource Locator (URL) and cannot be followed.
-*     __metricId__:  Optional for POST (if present then it will add data to the existing metic).  A unique identifier for the POST event that this metric is associated with.
-*     __metricType__:  Required for POST.  The type of metric.  The enumeration for valid values is the same as __types__ in the GET request.
-*     __profileAccumulator__:  Optional for POST (defaults to native).  A metric's value often represents a sample period.  Since multiple values may be gathered during a sample period and a metric represents it as a single value it is important to understand how the values during the sample period were combined to generate the single value.  native = no accumulation occurred,  sum = the values of the sample period were added together,  avg = the values of the sample period were added together and divided by the number of samples.
-*     __link__:  Not used.
-*     __startTime__: Never in POST.  The value of the startTime field of the first Data sample.
-*     __endTime__:  Never in POST.  The value of the endTime field of the last Data sample.
-*     __profileName__:  Required for POST.  The values in the 'Value' field of the 'Data' field has a specific syntax for the values.  This field, profileName, defines that format. accelerometer = [{x acceleration in g}, {y acceleration in g}, {z acceleration in g}], activityType = {activity}, bloodGlucose = {glucose level}, bloodPressure = [{systolic},{diastolic},{mean arterial pressure}], bmi = {body mass index}, caloriesBurned = {calories burned}, distanceTraveled = {distance traveled}, height = {height}, location = [{latitude}, {longitude}, {elevation}], mets = {metablic equivalent task}, pulseRate = {pulse rate}, speed = {speed}, steps = {steps}, weight = {weight}
-*     __operator__:  Optional for POST (defaults to user).  Describes who took the metric readings.
-*        __href__:  A Universal Resource Identifier (URI) defining the user that took the reading.  The numeric value in the URI may be used in User methods of this RESTful API.
-*        __rel__:  Indicates that this URI is NOT a Universal Resource Locator (URL) and cannot be followed.
-*    __professional__:  Optional for POST (defaults to false).  Boolean indicating whether the operator was a trained medical professional or not.
-*    __data__:  Optional for POST (a POST without data creates a __metricId__ that can be used with PUTs) A list of data values of the metric.
-*        __startTime__:  The start time of the sampling of this data value.
-*        __endTime__:  The end time of the sampling of this data value.
-*        __value__:  A list containing the value in the __profileName__ format, in the __profileUnits__ units, using the __profileAccumulator__ to combine the values during the sampling period.  It is a list in case a single value has multiple pieces of information (blood pressure, location, etc).
-*    __metadata__:  Optional for POST. an arbitrary set of name/value pairs that allow an application to provide additional, application specific, information with a Metric. Names can be arbitrary and may contain an optional domain prefix to help distinguish the metaData written by different applications.
+* __metric__: an array of the "metric" elments
+
 --
 Get metric collection.
 
@@ -198,50 +497,6 @@ GET /user/{commonSensesId}/metric-collection?start_index={integer}&max_returns={
 }
 
 
-Create new metric.  This is used if your application is acting as a collector/sensor.  Otherwise this is rarely used by an application.
-POST /user/{userId}/metric
-> Authorization: bearer {access_token}
-> Content-Type: application/vnd.commonsenses.v1+json
-{
-"data" : [ {
-            "endTime" : "2013-04-01T11:45:24.127-04:00",
-            "startTime" : "2013-04-01T11:45:24.126-04:00",
-            "value" : [ "1305" ]
-           } ],
-"metaData" : [ {
-                 "com_Elbrys_MetadataExample1" : "34"
-               },
-               {
-                "org_Example_MetaDataExample2" : "Example Metadata"
-                } ],
-"metricType" : "steps",
-"profileAccumulator" : "sum",
-"profileName" : "steps",
-"profileUnits" : "{step}",
-"ver" : "1"
-}
-< 201
-< Location: /metric/1043487174283814390993
-
-
-Update existing metric.  Similar to POST this is used if your application is acting as a collector/sensor.
-PUT /metric/{metricId}
-> Authorization: bearer {access_token}
-> Content-Type: application/vnd.commonsenses.v1+json
-{
-    "ver": "1",
-    "metricType": "steps",
-    "profileName": "steps",
-    "data": [
-        {
-            "endTime": "2012-09-20T03:59:59.999Z",
-            "value": ["1500"],
-            "startTime": "2012-09-19T04:00:00.000Z"
-        }
-    ]
-}
-< 200
-< Content-Type: application/vnd.commonsenses.v1+json
 
 
 --
@@ -311,22 +566,30 @@ you do not see a sensor you wish to support.  Remember, at this time only indire
 
 
 ### JSON Collector Definition:
-* __totalCount__: Only for GET.  The total number of "metric" elements.
-* __collector__: Required for POST.  A single collector's information.
-*     __ver__:  Required for POST.  The version of the format used for this JSON definition.  Currently only version 1 is supported.
-*     __profile__: Only for GET.  Not currently used.
-*     __selected__:  Only for GET.  Boolean indicating whether the user has selected this collector to be used.
-*     __dateOfLastReading__:  Only for GET.  Indicates the last date that a new metric was received from the collector.
-*     __collectorId__:  Only for GET.  A unique identifier created by CommonSenses for the collector.
-*     __connectionType__:  Required for POST.  How does CommonSenses communicate with the collector:  internal = a direct sensor that is part of a larger device and is accessed via internal APIs (e.g. cell phone accelerometer or gps ), algorithm = a software algorithm run by your application used to calculate metrics, ant+ = a direct sensor that uses the ANT+ communication protocol, continua_bt = a direct sensor that uses BlueTooth radio and the Continua communciation protocol, webservice = an indirect sensor that uses a 3rd party web service.
-*     __deviceManufacturer__:  Required for __connectionType__ = webservice.  Defines the 3rd party web service to connect CommonSenses to: *fitbit, fitlinxx, fitbug, bodymedia, runkeeper, withings*
-*     __connection__:  Only for GET.  Indicates the status of the webservice connection.
+* __ver__:  Required for POST.  The version of the format used for this JSON definition.  Currently only version 1 is supported.
+* __profile__: Only for GET.  Not currently used.
+* __selected__:  Only for GET.  Boolean indicating whether the user has selected this collector to be used.
+* __dateOfLastReading__:  Only for GET.  Indicates the last date that a new metric was received from the collector.
+* __collectorId__:  Only for GET.  A unique identifier created by CommonSenses for the collector.
+* __connectionType__:  Required for POST.  How does CommonSenses communicate with the collector:  __internal__ = a direct sensor that is part of a larger device and is accessed via internal APIs (e.g. cell phone accelerometer or gps ), __algorithm__ = a software algorithm run by your application used to calculate metrics, __ant+__ = a direct sensor that uses the ANT+ communication protocol, __continua_bt__ = a direct sensor that uses BlueTooth radio and the Continua communciation protocol, __continua_usb__ = a direct sensor that uses a USB connection and the Continua communication protocol, __serial_bt__ = a direct sensor that uses BlueTooth radio and serial protocol, and __webservice__ = an indirect sensor that uses a 3rd party web service.
+*    __deviceManufacturer__:  Required for __connectionType__ = webservice.  Defines the 3rd party web service to connect CommonSenses to: *fitbit, fitlinxx, fitbug, bodymedia, runkeeper, withings*
+*    __connection__:  Only for GET.  Indicates the status of the webservice connection.
 *         __tokenGood__:  Only for GET.    Because most webservice connections rely on OAUTH and access tokens the access tokens can sometimes become invalid.  If true then the token is fine, otherwise the user should reauthorize CommonSenses.
-*     __active__:  Only for GET.  Boolean indicating whether this sensor is 'active'.
-*     __manufacturerProductName__:  Only for GET.  Provides a specific model identifier in case the manufacturer supports multiple sensors.
-*     __name__:   Optional.  A human-readable name of the collector. In the case of webservice connectionType vendors, this will be the device serial number, if available.
+*    __active__:  Only for GET.  Boolean indicating whether this sensor is 'active'.
+*    __manufacturerProductName__:  Only for GET.  Provides a specific model identifier in case the manufacturer supports multiple sensors.
+*    __name__:   Optional.  A human-readable name of the collector. In the case of webservice connectionType vendors, this will be the device serial number, if available.
+
+### JSON Collector Collection Definition:
+* __totalCount__: Only for GET.  The total number of "collector" elements.
+* __collector__: An array of "collector" elements.
+
 --
 Get collectors associated with user.
+
+Parameters:
+
+* __active__:  Optional (default: false).  If set to true, then only return collectors that are marked as active.
+
 GET /user/{userId}/collector-collection
 > Authorization: bearer {access_token}
 > Accept: application/vnd.commonsenses.v1+json
