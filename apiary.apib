@@ -774,6 +774,71 @@ OR
            });
 
 --
+--
+Push Notifications
+
+
+The CommonSenses server has the ability to notify your application's 
+server of activity for your users. There will be a latency of several minutes between a 
+new resource and the notification going out. This allows us to consolidate multiple resources
+into a single message. However, each notification only cover one combination of __type__ and __operation__.
+So if the user had metrics that were created and some that were updated, then your server would receive two notifications.
+
+CommonSenses supports notifications of for the following types
+of resources and operations:
+### Metric
+* created -- a new metric has been uploaded to the user's data
+* updated -- an existing metric has been modified
+
+### Collector
+* created -- the user has registered a new collector
+* selected -- the user has selected a collector to be associated with your application ( via the SensorManager )
+
+
+### Notification JSON Definition:
+* __type__ : the notification type: __metric__ = the notification contains metric id(s), __collector__ = the notification contains collector ids
+* __operation__ : the operation that occured on the listed ids: __created__ = the id(s) were created, __updated__ = the id(s) were updated
+* __ids__ : an array of CommonSenses id strings for the resources associated with this notification
+* __userId__ : an id of the user associated to the resources. If your application used the Application Access token to create the user account, then the id returned is the id of the user from your system and not a CommonSenses id.
+* __timeStamp__ : the date and time this notification was created
+
+In order for your server to receive notifications, it must register one or more urls via the dev.commonsenses.com site ( TBD ) in your application's details. Once these urls are registered, we will start to send data when it is available. Our notifications are sent as POST operations. We support either a single url to which you will receive all notifications, or a different url per notification type. The choice is up to you.
+
+We do expect your server to respond with a 200 status code upon receipt of the notification. We not currently support retry on this notifications, so non-200 status codes will be
+ignored.
+
+As the notifications contain only ids, your server will need to execute the appropriate GET call to CommonSenses to fetch the full details.
+
+Recieve CommonSenses Notification
+--
+
+In this example the application added a CommonSenses user using the string 'john.q.public@myapp.com' the application's user identifier. The application registered 
+the https://my-app.my-domain.com/my-app/cs/notifications url with CommonSenses.
+
+POST /my-app/cs/notifications
+> Content-Type: application/json
+{
+    "type": "metric",
+    "operation":"create",
+    "ids":["105123","105569","105990"],
+    "userId":"john.q.public@myapp.com",
+    "timeStamp":"2013-06-22T16:42:59Z"
+}
+< 200
+
+In this example, the user was added via an OAuth 2.0 exchange and so the notification uses the CommonSenses id in the body. The application registered 
+the https://my-app.my-domain.com/my-app/cs/notifications url with CommonSenses.
+
+POST /my-app/cs/notifications
+> Content-Type: application/json
+{
+    "type": "metric",
+    "operation":"create",
+    "ids":["105123","105569","105990"],
+    "userId":"1010132",
+    "timeStamp":"2013-06-22T16:42:59Z"
+}
+< 200
 
 --
 Sandbox Server
