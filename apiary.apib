@@ -87,7 +87,8 @@ This application authentication used to get this application access token is bas
 The header MUST be based on this JSON: {"alg":"HS256","typ":"JWT"}. HS256 stands for HMAC-SHA256. This is the only type of encryption and hashing supported by the CommonSenses server for this token request. This is string is then base64 url encoded ( we'll call this the encoded_header ).
 
 ### Claim
-The claim MUST follow this format ( all fields are required ): {"iss":"[application_id]","prn":"[application_id]","aud":"http://api.commonsenses.com/oauth/token","exp":[expiration_time]} .
+The claim MUST follow this format ( all fields are required ): {"iss":"[application_id]","prn":"[application_id]","aud":"https            theLogger.debug( "not a steps metric. skipping...")
+://api.commonsenses.com/oauth/token","exp":[expiration_time]} .
 Where [application_id] is the application id generated for your application on the [dev.commonsenses.com](http://dev.commonsenses.com) website. 
 And [expiration_time] is the time, in milliseconds from Jan 01, 1970, of when CommonSenses should reject your request as being too old. This is prevent replay attacks. Due to the possibility of timestamp mismatches between machines, this expiration time isn't strictly enforced, there is 2 minute window past the stated expiration time where we still treat it as valid.
 
@@ -126,7 +127,7 @@ Uses json gem.
     # create the claim
 	claim={"iss"=>application_id,
 		   "prn"=>application_id,
-		   "aud"=>"http://bhershpc.commonsenses.com:8080/oauth/token",
+		   "aud"=>"https://api.commonsenses.com/oauth/token",
 		   "exp"=>expire_time}
 	claim_str=JSON.dump(claim)
 
@@ -168,7 +169,7 @@ Python:
     # create the claim
 	claim={"iss":application_id,
 		   "prn":application_id,
-		   "aud":"http://api.commonsenses.com/oauth/token",
+		   "aud":"https://api.commonsenses.com/oauth/token",
 		   "exp":expire_time}
 
     # create the encoded input
@@ -244,7 +245,7 @@ Uses [json.org JSON library](http://json.org/java/)  and  Base64 from [Apache Co
     /* create the claim */
 	final JSONObject claim = new JSONObject();
 	claim.put("iss", applicationId);
-	claim.put("aud", "http://api.commonsenses.com/oauth/token");
+	claim.put("aud", "https://api.commonsenses.com/oauth/token");
 	claim.put("prn",applicationId);
     /* expires in 2 minutes */
 	claim.put("exp",System.currentTimeMillis()+2*60*1000 );
@@ -279,7 +280,7 @@ Errors are returned with a 400 status code and a JSON body of the format
 <tr><td>iss value has been deactivated</td><td>client_deactivated : the supplied iss value has been deactivated</td><td>contact support at support@elbrys.com</td></tr>
 <tr><td>exp value is too old</td><td>assertion_expired : the supplied exp value is too far in the past</td><td>exp value was more than two minutes in the past by the time it was recieved. verify your system time is accurate or increase the expiration time</td></tr>
 <tr><td>server could not validate the signature</td><td>signature_invalid : the server was unable to verify the signature</td><td>verify that the application secret used to sign is correct and/or that bas64url encoded was used</td></tr>
-<tr><td>aud value was incorrect</td><td>audience_not_valid : the aud value was invalid for the target server</td><td>verify that aud is http://api.commonsenses.com/oauth/token</td></tr>
+<tr><td>aud value was incorrect</td><td>audience_not_valid : the aud value was invalid for the target server</td><td>verify that aud is https://api.commonsenses.com/oauth/token</td></tr>
 <tr><td>claim was missing one or more required fields</td><td>claim_invalid : the claim was missing the `<field name>` field</td><td>verify that iss, prn, aud, and exp are present in the claim</td></tr>
 </table>
 
@@ -670,16 +671,11 @@ to appear where a user may see currently supported sensors, see which
 sensors they have associated, see the current state of the sensors and
 associate new sensors.
 
-An example of the SensorManager running may be seen by browsing 
-to [Example SensorManager](http://api-test.commonsenses.com:8090/sandbox-test/sensor_manager_gateway_2.html).
-Note, this example use the CommonSenses sandbox, not the production server
-please read the Sandbox section to understand the difference.
-
 The sensor manager is a standalone package with dependencies on jQuery and the commonsenses-sdk.js file.
 The developer will need to add the following lines in the script tag of the html page that contains a link to show the sensor manager.
     
-    <script type="text/javascript" src="http://manager.commonsenses.com/commonsenses-sdk/js/jquery/commonsenses-jquery.min.js"></script>
-    <script type="text/javascript" src="http://manager.commonsenses.com/commonsenses-sdk/js/commonsenses-sdk.js"></script>
+    <script type="text/javascript" src="https://api.commonsenses.com/commonsenses-sdk/js/jquery/commonsenses-jquery.min.js"></script>
+    <script type="text/javascript" src="https://api.commonsenses.com/commonsenses-sdk/js/commonsenses-sdk.js"></script>
 
 ## If you have both application id/secret and token then initialize CommonSenses. 
 
@@ -746,8 +742,8 @@ This would pop-up the sensor manager in a jQuery dialog.
 
 Sample code:
 
-    <script type="text/javascript" src="http://manager.commonsenses.com/commonsenses-sdk/js/jquery/commonsenses-jquery.min.js"></script>
-    <script type="text/javascript" src="http://manager.commonsenses.com/commonsenses-sdk/js/commonsenses-sdk.js"></script>
+    <script type="text/javascript" src="https://api.commonsenses.com/commonsenses-sdk/js/jquery/commonsenses-jquery.min.js"></script>
+    <script type="text/javascript" src="https://api.commonsenses.com/commonsenses-sdk/js/commonsenses-sdk.js"></script>
 
     CommonSenses.init(appId, appSecret, scopes, redirectUrl, token, function()
            {
@@ -760,8 +756,8 @@ Sample code:
            });
 OR
 
-    <script type="text/javascript" src="http://manager.commonsenses.com/commonsenses-sdk/js/jquery/commonsenses-jquery.min.js"></script>
-    <script type="text/javascript" src="http://manager.commonsenses.com/commonsenses-sdk/js/commonsenses-sdk.js"></script>
+    <script type="text/javascript" src="https://api.commonsenses.com/commonsenses-sdk/js/jquery/commonsenses-jquery.min.js"></script>
+    <script type="text/javascript" src="https://api.commonsenses.com/commonsenses-sdk/js/commonsenses-sdk.js"></script>
 
     CommonSenses.initializeToken(token, function()
            {
@@ -841,82 +837,8 @@ POST /my-app/cs/notifications
 < 200
 
 --
-Sandbox Server
+Sample API Calls
 
-The sandbox server is meant to be a place to test your 
-application's integration with CommonSenses. Data kept 
-here is to be considered transitory ( in that we may 
-decide to clean the database periodically ). The server 
-does not use SSL in an assist to debug communications with the server.
-
-To use the sandbox server replace the production base url with the
-sandbox url.
-
-* Production base url is https://api.commonsenses.com
-* Sandbox base url is http://sandbox.commonsenses.com
-
-The Sandbox web service uses a copy of SensorManager's Production 
-Javascript library They are hosted on the same server, but they 
-are stored in different paths.  You will need to replace the production
-Javascript library with the sandbox library.
-
-Production JS library paths
-
-    <script type="text/javascript" src="http://manager.commonsenses.com/commonsenses-sdk/js/jquery/commonsenses-jquery.min.js"></script>
-    <script type="text/javascript" src="http://manager.commonsenses.com/commonsenses-sdk/js/commonsenses-sdk.js"></script>
-
-Sandbox JS library paths
-
-    <script type="text/javascript" src="http://manager.commonsenses.com/sandbox/commonsenses-sdk/js/jquery/commonsenses-jquery.min.js"></script>
-    <script type="text/javascript" src="http://manager.commonsenses.com/sandbox/commonsenses-sdk/js/commonsenses-sdk.js"></script>
-The sandbox environment has a lighter security model. It does not
-require any user interaction to authenticate the user nor does it 
-require third-party identity provider ( like facebook ). It does 
-not require an application to be registered via the developer 
-website. It does not require a pre-existing user. You can use the 
-application id and application secret that you got from the 
-developer website or make one up ( as long as the application id 
-conforms to being used as part of a url path ). If you use your 
-application id from the developer website, we suggest that you 
-make up an application secret due to SSL not being supported.
-
-The regular OAuth2.0 steps are still followed. On a successful 
-OAuth request, both an application with the client_id and 
-client_secret supplied in the oauth requests will be created in 
-the sandbox system and an anonymous user will also be created. As 
-long as you keep track of the access_token and refresh_token you 
-should be able to access this user again ( subject to the caveat 
-that the data in the sandbox environment is transitory). Expiration 
-times for access tokens created on the sandbox server should be good 
-for 30 days from issue.
-Once you get an access token, all other operations should behave 
-as normal. However, some access related errors may propagate 
-differently due to the less restrictive security environment.
-
-Because there is still a need to get a verification code back to 
-the calling application, we’ve set up a special page in the 
-sandbox environment: sandboxAuth.jsp. This page takes the place 
-of a site-specific page that would normally receive the verification 
-code. This page take the “code” request parameter and makes it 
-available via the body of the response with the following format:
-
-    code=XXXXX
-If you are doing server-side initiation of the oauth negotiation, 
-then you can use
-
-    redirect_uri=http://sandbox.commonsenses.com/sandboxAuth.jsp 
-in place of any application-specific url you would normally use.
-Example:
-
-    GET http://sandbox.commonsenses.com/oauth/authorize?client_id=xxxxxxxxx&scope=steps,weight&redirect_uri=http://sandbox.commonsenses.com/sandboxAuth.jsp&response_type=code
-will return a document with
-
-    code=yyyyy
-(no HTML tags)
-Then to get the access token:
-
-    GET http://sandbox.commonsenses.com/oauth/token?client_id=xxxxxxxxx&scope=steps,weight&redirect_uri=http://sandbox.commonsenses.com/sandboxAuth.jsp&response_type=code&code=yyyyy&grant_type=authorization_code&client_secret=zzzzzzz
-This will return the normal access token json in the response body.
 
 Here is a complete Python example that will work in version 2.7 of Python.  It does not work with version 3.0 of Python.
 
@@ -949,10 +871,10 @@ Here is a complete Python example that will work in version 2.7 of Python.  It d
     
     cid="1001875581218806767393"
     csec="zzzzzz"
-    ruri="http://dev.commonsenses.com" 
+    ruri="https://api.commonsenses.com" 
     csscope="steps,weight,bloodPressure,bloodGlucose,height,pulseRate,met,location,speed,distanceTraveled,bmi,caloriesBurned,activityType"
     
-    csuri="http://sandbox.commonsenses.com"
+    csuri="https://api.commonsenses.com"
     
     print("client_id: "+cid)
     print("client_secret: "+csec)
@@ -962,7 +884,6 @@ Here is a complete Python example that will work in version 2.7 of Python.  It d
     
     #===================================================
     # GET AUTHORIZATION TOKEN
-    # this will only work on sandbox. 
     # api and api-test require gui interaction with user via browser
     #===================================================
     print
