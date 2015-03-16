@@ -1,7 +1,7 @@
 HOST: http://api.commonsenses.com/
 
 
---- CommonSenses API v1 (draft.3) ---
+--- CommonSenses API v1 (draft.4) ---
 ---
 CommonSenses provides tools to create an internet-of-things (IoT) application.  It takes care of all
 communications with sensor devices and provides their data in a common format to application
@@ -365,8 +365,10 @@ single point in time or over some time range.
 A list of metrics is called a Metric Collection.
 ### JSON Metric Definition:
 * __ver__: Required for POST.  The version of the format used in the JSON.  Currently always 1.
-* __profileUnits__:  Required for POST.  The units of the returned metrics.  g = Gravities, {activity} = an activty type, mg/dL = Milligrams per Decaliter, kPa = kilopascals, mm[Hg] = millimeters of mecury, kg/m2 = kilograms per meter^2, Cal = kilocalories, km = kilometers, cm = centimeters, deg = degrees, m = meters, [MET] = metabolic equivalence unit, {beat}/min = beats per minute, km/h = kilometers per hour, {step} = steps, kg = kilograms, % = percent, [degF] = degrees Fahrenheit, Cel = degrees Celsius
-* __profileName__:  Required for POST.  The values in the 'Value' field of the 'Data' field has a specific syntax for the values.  This field, profileName, defines that format. accelerometer = [{x acceleration in g}, {y acceleration in g}, {z acceleration in g}], activityType = {activity}, bloodGlucose = {glucose level}, bloodPressure = [{systolic},{diastolic},{mean arterial pressure}], bmi = {body mass index}, caloriesBurned = {calories burned}, distanceTraveled = {distance traveled in km}, height = {height in cm}, location = [{latitude}, {longitude}, {elevation in meters}], mets = {metablic equivalent task}, pulseRate = {pulse rate}, speed = {speed}, steps = {steps}, weight = {weight in lb or kg}, bloodOxygen = { % }, bodyTemperature = { [degF] or Cel }, environmentalTemperature = { [degF] or Cel }
+* __profileUnits__:  Required for POST.  The units of the returned metrics.  g = Gravities, {activity} = an activty type, mg/dL = Milligrams per Decaliter, kPa = kilopascals, mm[Hg] = millimeters of mecury, kg/m2 = kilograms per meter^2, Cal = kilocalories, km = kilometers, cm = centimeters, deg = degrees, m = meters, [MET] = metabolic equivalence unit, {beat}/min = beats per minute, km/h = kilometers per hour, {step} = steps, kg = kilograms, % = percent, [degF] = degrees Fahrenheit, Cel = degrees Celsius, [lb_avg] = average weigh in lbs, lb = pounds, {intensityLevel} = intensity level 
+* __profileName__:  Required for POST.  The values in the 'Value' field of the 'Data' field has a specific syntax for the values.  This field, profileName, defines that format. distanceTraveled = {distance traveled in km}, caloriesBurned = {calories burned}, speed = {speed in km/h}, location = [{latitude}, {longitude}, {elevation in meters}], met = {metablic equivalent task}, accelerometer = [{x acceleration in g}, {y acceleration in g}, {z acceleration in g}], steps = {steps}, activityType = {activity}, bloodPressure = [{systolic},{diastolic},{mean arterial pressure}], pulseRate = {pulse rate in {beat}/min}, weight = {weight in lb, [lb_avg], kg}, height = {height in cm},
+bmi = {body mass index}, intensityLevel = [{intensityLevel},{intensityLevel},{intensityLevel},{intensityLevel},{intensityLevel}],
+bloodGlucose = {glucose level}, bloodOxygen = { % }, bodyTemperature = { [degF] or Cel }, environmentalTemperature = { [degF] or Cel }
 * __metricType__:  Required for POST.  The type of metric.  The enumeration for valid values is the same as __types__ in the GET request.
 * __collector__:  Optional for POST (defaults to application identifier that is doing the POST).  A definition of the collector (sensor or application) that generated the metric.
 *    __href__:  A Universal Resource Identifier (URI) defining the collector.  The numeric value in the URI may be used in Collector methods of this RESTful API.
@@ -444,7 +446,8 @@ Parameters:
 
 * __max_returns__:  Optional (default: 10).  When a query generates a large number of results they will not all be returned but will instead be returned in pages.  This parameter defines a number of results per page (number of pages = total in result set / max_returns)
 * __start_index__:  Optional, required if max_returns defined (default: 0).  Defines the page number to return.
-* __types__:  Optional (default: all).  Defines a comma delimited list of metric types to be returned.  Valid values: *steps, accelerometerReading, activityType, bloodGlucose, bloodPressure, bmi, caloriesBurned, distanceTraveled, height, location, mets, pulseRate, speed, weight*
+* __types__:  Optional (default: all).  Defines a comma delimited list of metric types to be returned.  Valid values: *accelerometer,activityType,bloodGlucose,bloodOxygen,bloodPressure,bmi,bodyTemperature,caloriesBurned,distanceTraveled,
+environmentalTemperature,height,intensityLevel,location,met,pulseRate,speed,steps,weight,*
 * __start_time__:  Optional, required if end_time defined.  When specified only metrics with start times that are equal to or after this time are returned.  Format is: YYYY-MM-DDTHH:mm:ss.SSS-XX:yy.  YYYY = year, MM = 2 digit month (01-12), DD = 2 digit day of month (01-31), T = T, HH = 2 digit hours (01-23), mm = 2 digit minutes (00-59), ss = 2 digit seconds (00-59), SSS = 3 digit milliseconds (000-999) optional, XX = 2 digit hour offset from GMT for timezone (00-23), yy = 2 digit minute offset from GMT for timezone (00-59)
 * __end_time__:  Optional, required if start_time defined.  When specified only metrics with end times that are equal to or before this time are returned.  Format is: YYYY-MM-DDTHH:mm:ss.SSS-XX:yy
 * __order__:  Optional (default: ascending).  Specifies the ordering of the metrics results.  Valid values:  *asc, desc*
