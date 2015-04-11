@@ -330,6 +330,8 @@ A user is the data element to which collectors and metrics are associated.
 * __timeZone__: Optional for POST. A valid timezone name from [IANA Timezone Database](http://www.iana.org/time-zones). Used with some 3rd party vendors to estabilish correct timestamps on data. If not provided GMT is assumed for the user.
 * __identity.providedId__: Required for POST. A unique identifier from the creating application's system for this user.
 
+### NOTE
+* After a POST the user id will be returned in the 'Location' header of the HTTP response.
 --
 
 Create a user. Users created by an application are only visible to application that created them. This POST operation is considered idempotent. If the same identity.providerId value is used, then the application can rediscover the commonsenses id of that user. No updates will be done via this POST operation.
