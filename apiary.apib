@@ -1,7 +1,7 @@
 HOST: http://api.commonsenses.com/
 
 
---- CommonSenses API v1 (draft.4) ---
+--- CommonSenses API v1 (draft.5) ---
 ---
 CommonSenses provides tools to create an internet-of-things (IoT) application.  It takes care of all
 communications with sensor devices and provides their data in a common format to application
@@ -436,6 +436,51 @@ PUT /metric/{metricId}
 < 202
 < Content-Type: application/vnd.commonsenses.v1+json
 
+Get Details for an existing metric
+
+GET /metric/{metricId}
+> Authorization: bearer {access_token}
+> Accept: application/vnd.commonsenses.v1+json
+< 200
+< Content-Type: application/vnd.commonsenses.v1+json
+{
+            "ver": "1",
+            "profileUnits": "{step}",
+            "collector": {
+                "href": "/collector/1058653470622537068986",
+                "rel": "nofollow"
+            },
+            "metricId": "1041316279648494430789",
+            "metricType": "steps",
+            "profileAccumulator": "sum",
+            "link": [],
+            "startTime": "2013-04-01T15:45:24.126Z",
+            "profileName": "steps",
+            "operator": {
+                "href": "/user/1016478538088269831140",
+                "rel": "nofollow"
+            },
+            "professional": false,
+            "endTime": "2013-04-01T15:45:24.127Z",
+            "data": [
+                {
+                    "endTime": "2013-04-01T15:45:24.127Z",
+                    "value": [
+                        "1305"
+                    ],
+                    "startTime": "2013-04-01T15:45:24.126Z"
+                }
+            ],
+            "metaData": [
+                {
+                    "com_Elbrys_MetadataExample1": "34"
+                },
+                {
+                    "org_Example_MetaDataExample2": "Example+Metadata"
+                }
+            ]
+        }
+}
 
 ### JSON Metric Collection Definition:
 * __totalCount__: Required for POST.  The total number of "metric" elements.
@@ -665,7 +710,25 @@ POST /user/{userId}/collector?request_uri={requestUri}
 < 201
 < Location: /collector/364757687932282765869232361
 
+Get details for an existing collector.
 
+GET /collector/{collectorId}
+> Authorization: bearer {access_token}
+> Accept: application/vnd.commonsenses.v1+json
+< 200 
+{  
+    "active":true,
+    "collectorId":"123",
+    "connection"{"tokenGood":true},
+    "connectionType":"webservice",
+    "dateOfLastReading":"2015-04-17T05:59:59.999Z",
+    "deviceManufacturer":"fitbit",
+    "manufacturerProductName":"FitBit",
+    "name":"abc",
+    "profile":[],
+    "selected":false,
+    "ver":"1"
+}
 
 --
 SensorManager GUI
@@ -810,6 +873,10 @@ We do expect your server to respond with a 200 status code upon receipt of the n
 ignored.
 
 As the notifications contain only ids, your server will need to execute the appropriate GET call to CommonSenses to fetch the full details.
+
+GET /metric/{metricId} or
+
+GET /collector/{collectorId}
 
 Recieve CommonSenses Notification
 --
