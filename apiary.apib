@@ -373,21 +373,21 @@ bmi = {body mass index}, intensityLevel = [{intensityLevel},{intensityLevel},{in
 bloodGlucose = {glucose level}, bloodOxygen = { % }, bodyTemperature = { [degF] or Cel }, environmentalTemperature = { [degF] or Cel }
 * __metricType__:  Required for POST & PUT.  The type of metric.  The enumeration for valid values is the same as __types__ in the GET request.
 * __collector__:  Optional for POST (defaults to application identifier that is doing the POST).  A definition of the collector (sensor or application) that generated the metric.
-*    __href__:  A Universal Resource Identifier (URI) defining the collector.  The numeric value in the URI may be used in Collector methods of this RESTful API.
-*    __rel__:  Indicates that this URI is NOT a Universal Resource Locator (URL) and cannot be followed.
+    *    __href__:  A Universal Resource Identifier (URI) defining the collector.  The numeric value in the URI may be used in Collector methods of this RESTful API.
+    *    __rel__:  Indicates that this URI is NOT a Universal Resource Locator (URL) and cannot be followed.
 * __metricId__:  Not used for POST. Required for PUT. Always present in GET (if present then it will add data to the existing metic).  A unique identifier the metric.
 * __profileAccumulator__:  Requried for PUT, Optional for POST (defaults to native).  A metric's value often represents a sample period.  Since multiple values may be gathered during a sample period and a metric represents it as a single value it is important to understand how the values during the sample period were combined to generate the single value.  native = no accumulation occurred,  sum = the values of the sample period were added together,  avg = the values of the sample period were added together and divided by the number of samples.
 * __link__:  Not used in POST or PUT. Present in GET and represent the url to directly access this metric.
 * __startTime__: Never in POST.  The value of the startTime field of the first Data sample.
 * __endTime__:  Never in POST.  The value of the endTime field of the last Data sample.
 * __operator__:  Optional for POST (defaults to user).  Describes who took the metric readings.
-*    __href__:  A Universal Resource Identifier (URI) defining the user that took the reading.  The numeric value in the URI may be used in User methods of this RESTful API.
-*    __rel__:  Indicates that this URI is NOT a Universal Resource Locator (URL) and cannot be followed.
-*    __professional__:  Optional for POST (defaults to false).  Boolean indicating whether the operator was a trained medical professional or not.
+    *    __href__:  A Universal Resource Identifier (URI) defining the user that took the reading.  The numeric value in the URI may be used in User methods of this RESTful API.
+    *    __rel__:  Indicates that this URI is NOT a Universal Resource Locator (URL) and cannot be followed.
+    *    __professional__:  Optional for POST (defaults to false).  Boolean indicating whether the operator was a trained medical professional or not.
 *    __data__:  Optional for POST (a POST without data creates a __metricId__ that can be used with PUTs) A list of data values of the metric.
-*    __startTime__:  The start time of the sampling of this data value.
-*    __endTime__:  The end time of the sampling of this data value.
-*    __value__:  A list containing the value in the __profileName__ format, in the __profileUnits__ units, using the __profileAccumulator__ to combine the values during the sampling period.  It is a list in case a single value has multiple pieces of information (blood pressure, location, etc).
+    *    __startTime__:  The start time of the sampling of this data value.
+    *    __endTime__:  The end time of the sampling of this data value.
+    *    __value__:  A list containing the value in the __profileName__ format, in the __profileUnits__ units, using the __profileAccumulator__ to combine the values during the sampling period.  It is a list in case a single value has multiple pieces of information (blood pressure, location, etc).
 *    __metadata__:  Optional for POST. an arbitrary set of name/value pairs that allow an application to provide additional, application specific, information with a Metric. Names can be arbitrary and may contain an optional domain prefix to help distinguish the metaData written by different applications.
 --
 Create new metric.  This is used if your application is acting as a collector/sensor.  Otherwise this is rarely used by an application.
